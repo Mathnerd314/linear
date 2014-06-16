@@ -3,6 +3,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE InstanceSigs #-}
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -20,6 +23,7 @@ module Linear.Affine where
 
 import Control.Applicative
 import Control.Lens
+import qualified Data.Coerce as C
 import Data.Complex (Complex)
 import Data.Distributive
 import Data.Foldable as Foldable
@@ -61,31 +65,31 @@ import Linear.Vector
 -- > (a .+^ u) .+^ v  =  a .+^ (u ^+^ v)@
 -- > (a .-. b) ^+^ v  =  (a .+^ v) .-. q@
 class Additive (Diff p) => Affine p where
-  type Diff p :: * -> *
+  type Diff p :: *
 
   infixl 6 .-.
   -- | Get the difference between two points as a vector offset.
-  (.-.) :: Num a => p a -> p a -> Diff p a
+  (.-.) :: p -> p -> Diff p
 
   infixl 6 .+^
   -- | Add a vector offset to a point.
-  (.+^) :: Num a => p a -> Diff p a -> p a
+  (.+^) :: p -> Diff p -> p
 
   infixl 6 .-^
   -- | Subtract a vector offset from a point.
-  (.-^) :: Num a => p a -> Diff p a -> p a
+  (.-^) :: p -> Diff p -> p
   p .-^ v = p .+^ negated v
   {-# INLINE (.-^) #-}
 
 -- | Compute the quadrance of the difference (the square of the distance)
-qdA :: (Affine p, Foldable (Diff p), Num a) => p a -> p a -> a
+qdA :: (Affine p, Diff p ~ t a, Foldable t, Num a, Functor t) => p -> p -> a
 qdA a b = Foldable.sum (fmap (join (*)) (a .-. b))
 
 -- | Distance between two points in an affine space
-distanceA :: (Floating a, Foldable (Diff p), Affine p) => p a -> p a -> a
+distanceA :: (Affine p, Foldable t, Functor t, Floating a, Diff p ~ t a) => p -> p -> a
 distanceA a b = sqrt (qdA a b)
 
-#define ADDITIVEC(CTX,T) instance CTX => Affine T where type Diff T = T ; \
+#define ADDITIVEC(CTX,T) instance (Additive a, Fractional a, CTX) => Affine (T a) where type Diff (T a) = T a; \
   (.-.) = (^-^) ; {-# INLINE (.-.) #-} ; (.+^) = (^+^) ; {-# INLINE (.+^) #-} ; \
   (.-^) = (^-^) ; {-# INLINE (.-^) #-}
 #define ADDITIVE(T) ADDITIVEC((), T)
@@ -113,7 +117,7 @@ ADDITIVEC(Dim n, (V n))
 -- type level
 newtype Point f a = P (f a)
   deriving ( Eq, Ord, Show, Read, Monad, Functor, Applicative, Foldable
-           , Traversable, Apply, Additive, Metric
+           , Traversable, Apply, Metric
            , Fractional , Num, Ix, Storable, Epsilon
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 702
            , Generic
@@ -154,12 +158,22 @@ instance R4 f => R4 (Point f) where
   _w = lensP . _w
   _xyzw = lensP . _xyzw
 
-instance Additive f => Affine (Point f) where
-  type Diff (Point f) = f
+instance Additive (f a) => Additive (Point f a) where
+  type Scalar (Point f a) = Scalar (f a)
+  zero = C.coerce (zero :: f a)
+  (^+^) = C.coerce ((^+^) :: f a -> f a -> f a)
+  (^-^) = C.coerce ((^-^) :: f a -> f a -> f a)
+  negated = C.coerce (negated :: f a -> f a)
+  (*^)  = C.coerce ((*^) :: Scalar (f a) -> f a -> f a)
+  (^*) = C.coerce ((^*) :: f a -> Scalar (f a) -> f a)
+  (^/) = C.coerce ((^/) :: f a -> Scalar (f a) -> f a)
+
+instance Additive (f a) => Affine (Point f a) where
+  type Diff (Point f a) = f a
   P x .-. P y = x ^-^ y
   P x .+^ v = P (x ^+^ v)
   P x .-^ v = P (x ^-^ v)
 
 -- | Vector spaces have origins.
-origin :: (Additive f, Num a) => Point f a
+origin :: (Additive (f a)) => Point f a
 origin = P zero
