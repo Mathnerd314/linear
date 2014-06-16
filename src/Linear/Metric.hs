@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE Trustworthy #-}
 #endif
@@ -32,53 +34,52 @@ import Linear.Vector
 -- >>> import Linear
 
 -- | Free and sparse inner product/metric spaces.
-class Additive f => Metric f where
+class Additive v => Metric v where
   -- | Compute the inner product of two vectors or (equivalently)
   -- convert a vector @f a@ into a covector @f a -> a@.
   --
   -- >>> V2 1 2 `dot` V2 3 4
   -- 11
-  dot :: Num a => f a -> f a -> a
+  dot :: v -> v -> Scalar v
 #ifndef HLINT
-  default dot :: (Foldable f, Num a) => f a -> f a -> a
+  default dot :: (v ~ f a, Foldable f, ExtraStuff f, Scalar v ~ a, Num a) => f a -> f a -> a
   dot x y = Foldable.sum $ liftI2 (*) x y
 #endif
 
   -- | Compute the squared norm. The name quadrance arises from
   -- Norman J. Wildberger's rational trigonometry.
-  quadrance :: Num a => f a -> a
+  quadrance :: v -> Scalar v
   quadrance v = dot v v
 
   -- | Compute the quadrance of the difference
-  qd :: Num a => f a -> f a -> a
+  qd :: v -> v -> Scalar v
   qd f g = quadrance (f ^-^ g)
 
-  -- | Compute the distance between two vectors in a metric space
-  distance :: Floating a => f a -> f a -> a
-  distance f g = norm (f ^-^ g)
-
   -- | Compute the norm of a vector in a metric space
-  norm :: Floating a => f a -> a
+  norm :: Floating (Scalar v) => v -> Scalar v
   norm v = sqrt (quadrance v)
 
-  -- | Convert a non-zero vector to unit vector.
-  signorm :: Floating a => f a -> f a
-  signorm v = fmap (/m) v where
-    m = norm v
+  -- | Compute the distance between two vectors in a metric space
+  distance :: Floating (Scalar v) => v -> v -> Scalar v
+  distance f g = norm (f ^-^ g)
 
-instance Metric Identity where
+  -- | Convert a non-zero vector to unit vector.
+  signorm :: Floating (Scalar v) => v -> v
+  signorm v = v ^/ norm v
+
+instance (Additive a, Fractional a) => Metric (Identity a) where
   dot (Identity x) (Identity y) = x * y
 
-instance Metric IntMap
+instance (Additive a, Fractional a) => Metric (IntMap a)
 
-instance Ord k => Metric (Map k)
+instance (Ord k, Additive a, Fractional a) => Metric (Map k a)
 
-instance (Hashable k, Eq k) => Metric (HashMap k)
+instance (Hashable k, Eq k, Additive a, Fractional a) => Metric (HashMap k a)
 
-instance Metric Vector
+instance (Additive a, Fractional a) => Metric (Vector a)
 
 -- | Normalize a 'Metric' functor to have unit 'norm'. This function
 -- does not change the functor if its 'norm' is 0 or 1.
-normalize :: (Floating a, Metric f, Epsilon a) => f a -> f a
-normalize v = if nearZero l || nearZero (1-l) then v else fmap (/sqrt l) v
+normalize :: (Floating (Scalar v), Metric v, Epsilon (Scalar v)) => v -> v
+normalize v = if nearZero l || nearZero (1-l) then v else v ^/ sqrt l
   where l = quadrance v
