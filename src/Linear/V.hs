@@ -157,9 +157,11 @@ instance Dim n => Monad (V n) where
     toVector (f (as `unsafeIndex` i)) `unsafeIndex` i
   {-# INLINE (>>=) #-}
 
-instance Dim n => Additive (V n) where
+instance Dim n => Additive (V n a) where
   zero = pure 0
   {-# INLINE zero #-}
+
+instance Dim n => ExtraStuff (V n) where
   liftU2 f (V as) (V bs) = V (V.zipWith f as bs)
   {-# INLINE liftU2 #-}
   liftI2 f (V as) (V bs) = V (V.zipWith f as bs)
@@ -210,7 +212,7 @@ instance (Dim n, Epsilon a) => Epsilon (V n a) where
   nearZero = nearZero . quadrance
   {-# INLINE nearZero #-}
 
-instance Dim n => Metric (V n) where
+instance Dim n => Metric (V n a) where
   dot (V a) (V b) = V.sum $ V.zipWith (*) a b
   {-# INLINE dot #-}
 

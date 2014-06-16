@@ -123,9 +123,12 @@ instance Hashable a => Hashable (V2 a) where
   hashWithSalt s (V2 a b) = s `hashWithSalt` a `hashWithSalt` b
   {-# INLINE hashWithSalt #-}
 
-instance Additive V2 where
+instance Additive (V2 a) where
+  type Scalar (V2 a) = a
   zero = pure 0
   {-# INLINE zero #-}
+
+instance ExtraStuff V2 where
   liftU2 = liftA2
   {-# INLINE liftU2 #-}
   liftI2 = liftA2
@@ -169,7 +172,7 @@ instance Fractional a => Fractional (V2 a) where
   fromRational = pure . fromRational
   {-# INLINE fromRational #-}
 
-instance Metric V2 where
+instance Metric (V2 a) where
   dot (V2 a b) (V2 c d) = a * c + b * d
   {-# INLINE dot #-}
 

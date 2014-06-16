@@ -104,9 +104,11 @@ instance Applicative Plucker where
     Plucker (a g) (b h) (c i) (d j) (e k) (f l)
   {-# INLINE (<*>) #-}
 
-instance Additive Plucker where
+instance Additive (Plucker a) where
   zero = pure 0
   {-# INLINE zero #-}
+
+instance ExtraStuff Plucker where
   liftU2 = liftA2
   {-# INLINE liftU2 #-}
   liftI2 = liftA2
@@ -247,7 +249,7 @@ instance Storable a => Storable (Plucker a) where
     where ptr' = castPtr ptr
   {-# INLINE peek #-}
 
-instance Metric Plucker where
+instance Metric (Plucker a) where
   dot (Plucker a b c d e f) (Plucker g h i j k l) = a*g+b*h+c*i+d*j+e*k+f*l
   {-# INLINE dot #-}
 

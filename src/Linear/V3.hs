@@ -103,9 +103,12 @@ instance Applicative V3 where
   V3 a b c <*> V3 d e f = V3 (a d) (b e) (c f)
   {-# INLINE (<*>) #-}
 
-instance Additive V3 where
+instance Additive (V3 a) where
+  type Scalar (V3 a) = a
   zero = pure 0
   {-# INLINE zero #-}
+
+instance ExtraStuff V3 where
   liftU2 = liftA2
   {-# INLINE liftU2 #-}
   liftI2 = liftA2
@@ -155,7 +158,7 @@ instance Hashable a => Hashable (V3 a) where
   hashWithSalt s (V3 a b c) = s `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
   {-# INLINE hashWithSalt #-}
 
-instance Metric V3 where
+instance Metric (V3 a) where
   dot (V3 a b c) (V3 d e f) = a * d + b * e + c * f
   {-# INLINABLE dot #-}
 

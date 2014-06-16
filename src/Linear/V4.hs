@@ -104,9 +104,12 @@ instance Apply V4 where
   V4 a b c d <.> V4 e f g h = V4 (a e) (b f) (c g) (d h)
   {-# INLINE (<.>) #-}
 
-instance Additive V4 where
+instance Additive (V4 a) where
+  type Scalar (V4 a) = a
   zero = pure 0
   {-# INLINE zero #-}
+
+instance ExtraStuff V4 where
   liftU2 = liftA2
   {-# INLINE liftU2 #-}
   liftI2 = liftA2
@@ -154,7 +157,7 @@ instance Fractional a => Fractional (V4 a) where
   fromRational = pure . fromRational
   {-# INLINE fromRational #-}
 
-instance Metric V4 where
+instance Metric (V4 a) where
   dot (V4 a b c d) (V4 e f g h) = a * e + b * f + c * g + d * h
   {-# INLINE dot #-}
 

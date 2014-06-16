@@ -116,9 +116,12 @@ instance Applicative V1 where
   V1 f <*> V1 x = V1 (f x)
   {-@ INLINE (<*>) #-}
 
-instance Additive V1 where
+instance Additive (V1 a) where
+  type Scalar (V1 a) = a
   zero = pure 0
   {-# INLINE zero #-}
+  
+instance ExtraStuff V1 where
   liftU2 = liftA2
   {-# INLINE liftU2 #-}
   liftI2 = liftA2
@@ -164,7 +167,7 @@ instance Hashable a => Hashable (V1 a) where
 #endif
   hashWithSalt s (V1 a) = s `hashWithSalt` a
 
-instance Metric V1 where
+instance Metric (V1 a) where
   dot (V1 a) (V1 b) = a * b
   {-# INLINE dot #-}
 

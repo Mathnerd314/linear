@@ -48,7 +48,7 @@ import Linear.Instances ()
 -- >>> import Linear.V2
 
 -- | Basis element
-newtype E t = E { el :: Lens' t (Scalar t) }
+newtype E t = E { el :: forall x. Lens' (t x) x }
 
 infixl 6 ^+^, ^-^
 infixl 7 ^*, *^, ^/

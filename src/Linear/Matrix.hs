@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeFamilies #-}
 #endif
 ---------------------------------------------------------------------------
 -- |
@@ -75,15 +76,15 @@ infixl 7 !*!
 --
 -- >>> V2 (fromList [(1,2)]) (fromList [(2,3)]) !*! fromList [(1,V3 0 0 1), (2, V3 0 0 5)]
 -- V2 (V3 0 0 2) (V3 0 0 15)
-(!*!) :: (Functor m, Foldable t, Additive t, Additive n, Num a) => m (t a) -> t (n a) -> m (n a)
-f !*! g = fmap (\ f' -> Foldable.foldl' (^+^) zero $ liftI2 (*^) f' g) f
+(!*!) :: (Functor m, Foldable t, ExtraStuff t, Additive n, a ~ Scalar n) => m (t a) -> t n -> m n
+f !*! g = fmap (\ f' -> sumV $ liftI2 (*^) f' g) f
 
 infixl 6 !+!
 -- | Entry-wise matrix addition.
 --
 -- >>> V2 (V3 1 2 3) (V3 4 5 6) !+! V2 (V3 7 8 9) (V3 1 2 3)
 -- V2 (V3 8 10 12) (V3 5 7 9)
-(!+!) :: (Additive m, Additive n, Num a) => m (n a) -> m (n a) -> m (n a)
+(!+!) :: (Additive a, ExtraStuff f) => f a -> f a -> f a
 as !+! bs = liftU2 (^+^) as bs
 
 infixl 6 !-!
@@ -91,7 +92,7 @@ infixl 6 !-!
 --
 -- >>> V2 (V3 1 2 3) (V3 4 5 6) !-! V2 (V3 7 8 9) (V3 1 2 3)
 -- V2 (V3 (-6) (-6) (-6)) (V3 3 3 3)
-(!-!) :: (Additive m, Additive n, Num a) => m (n a) -> m (n a) -> m (n a)
+(!-!) :: (Additive a, ExtraStuff f) => f a -> f a -> f a
 as !-! bs = liftU2 (^-^) as bs
 
 infixl 7 !*
@@ -99,7 +100,7 @@ infixl 7 !*
 --
 -- >>> V2 (V3 1 2 3) (V3 4 5 6) !* V3 7 8 9
 -- V2 50 122
-(!*) :: (Functor m, Foldable r, Additive r, Num a) => m (r a) -> r a -> m a
+(!*) :: (ExtraStuff t, Foldable t, Num b, Functor f) => f (t b) -> t b -> f b
 m !* v = fmap (\r -> Foldable.sum $ liftI2 (*) r v) m
 
 infixl 7 *!
@@ -111,7 +112,7 @@ infixl 7 *!
 -- (*!) :: (Metric r, Additive n, Num a) => r a -> r (n a) -> n a
 -- f *! g = dot f <$> distribute g
 
-(*!) :: (Num a, Foldable t, Additive f, Additive t) => t a -> t (f a) -> f a
+(*!) :: (Additive v, ExtraStuff f, Foldable f) => f (Scalar v) -> f v -> v
 f *! g = sumV $ liftI2 (*^) f g
 
 infixl 7 *!!
@@ -119,7 +120,7 @@ infixl 7 *!!
 --
 -- >>> 5 *!! V2 (V2 1 2) (V2 3 4)
 -- V2 (V2 5 10) (V2 15 20)
-(*!!) :: (Functor m, Functor r, Num a) => a -> m (r a) -> m (r a)
+(*!!) :: (Additive b, Functor f) => Scalar b -> f b -> f b
 s *!! m = fmap (s *^) m
 {-# INLINE (*!!) #-}
 
@@ -128,7 +129,8 @@ infixl 7 !!*
 --
 -- >>> V2 (V2 1 2) (V2 3 4) !!* 5
 -- V2 (V2 5 10) (V2 15 20)
-(!!*) :: (Functor m, Functor r, Num a) => m (r a) -> a -> m (r a)
+-- (!!*) :: (Functor m, Functor r, Num a) => m (r a) -> a -> m (r a)
+(!!*) :: (Additive b, Functor f) => f b -> Scalar b -> f b
 (!!*) = flip (*!!)
 {-# INLINE (!!*) #-}
 

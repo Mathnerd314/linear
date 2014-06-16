@@ -100,9 +100,11 @@ instance Applicative Quaternion where
   Quaternion f fv <*> Quaternion a v = Quaternion (f a) (fv <*> v)
   {-# INLINE (<*>) #-}
 
-instance Additive Quaternion where
+instance Additive (Quaternion a) where
   zero = pure 0
   {-# INLINE zero #-}
+
+instance ExtraStuff Quaternion where
   liftU2 = liftA2
   {-# INLINE liftU2 #-}
   liftI2 = liftA2
@@ -257,7 +259,7 @@ instance RealFloat a => Fractional (Quaternion a) where
   fromRational x = Quaternion (fromRational x) 0
   {-# INLINE fromRational #-}
 
-instance Metric Quaternion where
+instance Metric (Quaternion a) where
   Quaternion e v `dot` Quaternion e' v' = e*e' + (v `dot` v')
   {-# INLINE dot #-}
 

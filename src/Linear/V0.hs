@@ -4,10 +4,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE Trustworthy #-}
-#endif
 
 #ifndef MIN_VERSION_hashable
 #define MIN_VERSION_hashable
@@ -40,12 +38,7 @@ import Data.Hashable
 import Data.Ix
 import Data.Semigroup
 import Foreign.Storable (Storable(..))
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 702
-import GHC.Generics (Generic)
-#endif
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 706
-import GHC.Generics (Generic1)
-#endif
+import GHC.Generics (Generic,Generic1)
 import qualified Data.Vector.Generic.Mutable as M
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed.Base as U
@@ -66,12 +59,8 @@ import Prelude hiding (sum)
 -- V0
 --
 data V0 a = V0 deriving (Eq,Ord,Show,Read,Ix,Enum,Data,Typeable
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 702
                         ,Generic
-#endif
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 706
                         ,Generic1
-#endif
                         )
 
 instance Functor V0 where
@@ -98,9 +87,12 @@ instance Applicative V0 where
   V0 <*> V0 = V0
   {-# INLINE (<*>) #-}
 
-instance Additive V0 where
+instance Additive (V0 a) where
+  type Scalar (V0 a) = a
   zero = V0
   {-# INLINE zero #-}
+
+instance ExtraStuff V0 where
   liftU2 _ V0 V0 = V0
   {-# INLINE liftU2 #-}
   liftI2 _ V0 V0 = V0
@@ -140,7 +132,7 @@ instance Fractional (V0 a) where
   fromRational _ = V0
   {-# INLINE fromRational #-}
 
-instance Metric V0 where
+instance Metric (V0 a) where
   dot V0 V0 = 0
   {-# INLINE dot #-}
 
